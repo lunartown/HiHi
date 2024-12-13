@@ -73,24 +73,18 @@ jobs:
           mkdir -p "$TEMP_DIR/src/main/java/$NEW_PACKAGE"
 
           # Template 파일 이름 변경 및 이동
-          if [ -d "$TEMP_DIR/src/main/java/$OLD_PACKAGE" ]; then
-            cd "$TEMP_DIR/src/main/java/$OLD_PACKAGE"
-          
-            # Template 파일 이름 변경
-            for file in *.java; do
-              if [[ -f "$file" ]]; then
-                mv "$file" "${file/Template/${{ env.PROJECT_CAMEL_UPPER }}}"
-              fi
-            done
-          
-            # 파일 이동
-            mv * "$TEMP_DIR/src/main/java/$NEW_PACKAGE/"
-            cd "$TEMP_DIR"
-            rm -rf "$TEMP_DIR/src/main/java/kr"
-          fi
+          cd "$TEMP_DIR"
+            find . -type f -name "*.java" | while read file; do
+            NEW_NAME="${file/Template/${{ env.PROJECT_CAMEL_UPPER }}}"
+            if [ "$file" != "$NEW_NAME" ]; then
+              # 디렉토리 생성 확보
+              mkdir -p "$(dirname "$NEW_NAME")"
+              mv "$file" "$NEW_NAME"
+              echo "Renamed $file to $NEW_NAME"
+            fi
+          done
 
           # 새 레포지토리로 푸시
-          cd $TEMP_DIR
           git config --global init.defaultBranch main
           git init
           git config user.name "GitHub Actions Bot"
