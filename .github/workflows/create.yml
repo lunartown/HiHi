@@ -78,7 +78,7 @@ jobs:
           
             # Template 파일 이름 변경
             for file in *.java; do
-              if [[ -f "$file" && "$file" == Template* ]]; then
+              if [[ -f "$file" ]]; then
                 mv "$file" "${file/Template/${{ env.PROJECT_CAMEL_UPPER }}}"
               fi
             done
