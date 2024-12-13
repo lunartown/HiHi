@@ -99,6 +99,7 @@ jobs:
           git commit -m "Initial commit from template"
           # PAT를 사용하여 푸시
           git remote add origin "https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository_owner }}/${{ github.event.inputs.repo_name }}.git"
+          git checkout -b prod
           git push -u origin prod
 
       - name: Clean up
