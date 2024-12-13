@@ -76,7 +76,7 @@ jobs:
             
             # Template로 시작하는 모든 파일의 이름을 변경
             find . -type f -name "Template*" | while read file; do
-              NEW_NAME="${file/#Template/${{ env.PROJECT_CAMEL_UPPER }}}"
+              NEW_NAME="$(dirname "$file")/$(basename "$file" | sed 's/^Template/'${{ env.PROJECT_CAMEL_UPPER }}'/')"
               mkdir -p "$(dirname "$NEW_NAME")"
               mv "$file" "$NEW_NAME"
             done
