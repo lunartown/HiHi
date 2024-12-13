@@ -76,7 +76,7 @@ jobs:
 
           # 먼저 디렉토리 이름을 변경 (깊은 디렉토리부터 처리하기 위해 역순으로)
           find . -type d | sort -r | while read dir; do
-            NEW_DIR_NAME="${dir/Template/${{ env.PROJECT_CAMEL_UPPER }}}"
+            NEW_DIR_NAME="${dir/template/${{ env.PROJECT_CAMEL_UPPER }}}"
             if [ "$dir" != "$NEW_DIR_NAME" ]; then
               mv "$dir" "$NEW_DIR_NAME"
               echo "Renamed directory $dir to $NEW_DIR_NAME"
