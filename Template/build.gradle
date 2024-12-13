@@ -1,0 +1,72 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.1.2'
+    id 'io.spring.dependency-management' version '1.1.2'
+}
+
+group = 'kr.teamo2'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    sourceCompatibility = '17'
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+sourceSets {
+    test {
+        java {
+            srcDirs = ['src/test/java']
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+//    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+//    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+//    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+//    implementation 'com.squareup.moshi:moshi:1.14.0'
+//    implementation 'org.jsoup:jsoup:1.16.1'
+
+    implementation 'org.springframework.cloud:spring-cloud-function-adapter-aws:4.2.0'
+    implementation 'org.springframework.cloud:spring-cloud-starter-function-web:4.2.0'
+
+    implementation 'com.amazonaws:aws-lambda-java-events:3.14.0'
+    implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'
+
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    compileOnly 'org.projectlombok:lombok'
+
+    runtimeOnly 'com.mysql:mysql-connector-j'
+
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testCompileOnly 'org.projectlombok:lombok'
+//    testRuntimeOnly 'com.mysql:mysql-connector-j'
+    testAnnotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+tasks.register('buildZip', Zip) {
+    into('lib') {
+        from jar
+        from configurations.runtimeClasspath
+    }
+}

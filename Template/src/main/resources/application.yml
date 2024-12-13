@@ -1,0 +1,6 @@
+schedule:
+  run: true
+spring:
+  cloud:
+    function:
+      definition: batchFunction

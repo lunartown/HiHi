@@ -1,0 +1,107 @@
+name: Generate Project from Template
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo_name:
+        description: '새로운 레포지토리 이름'
+        required: true
+        type: string
+      project_name:
+        description: '프로젝트 이름 (예: new_project)'
+        required: true
+        type: string
+      package_name:
+        description: '패키지 이름 (예: kr.teamo2.project)'
+        required: true
+        type: string
+
+jobs:
+  create-from-template:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout template repository
+        uses: actions/checkout@v4
+
+      - name: Set up variables
+        id: vars
+        run: |
+          # CamelCase 변환 함수 정의
+          function to_camel_case() {
+            echo "$1" | sed -E 's/[_-]/ /g' | awk '{for(i=1;i<=NF;i++)$i=toupper(substr($i,1,1))tolower(substr($i,2));}1' | sed 's/ //g'
+          }
+          
+          # 프로젝트 이름 변환
+          PROJECT_CAMEL=$(to_camel_case "${{ github.event.inputs.project_name }}")
+          echo "PROJECT_CAMEL_UPPER=$PROJECT_CAMEL" >> "$GITHUB_ENV"
+          echo "PROJECT_CAMEL_LOWER=$(echo ${PROJECT_CAMEL:0:1} | tr '[:upper:]' '[:lower:]')${PROJECT_CAMEL:1}" >> "$GITHUB_ENV"
+
+      - name: Create new repository
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PAT_TOKEN }}
+          script: |
+            try {
+              await github.rest.repos.createForAuthenticatedUser({
+                name: "${{ github.event.inputs.repo_name }}",
+                private: true,
+                auto_init: false
+              });
+              console.log('Repository created successfully');
+            } catch (error) {
+              console.log('Error creating repository:', error);
+              core.setFailed('Failed to create repository');
+            }
+
+      - name: Process template files
+        run: |
+          # 임시 디렉토리 생성
+          TEMP_DIR=$(mktemp -d)
+          cp -R Template/. $TEMP_DIR/
+
+          # 파일 내용 치환
+          find $TEMP_DIR -type f -exec sed -i "s/{{repo_name}}/${{ github.event.inputs.repo_name }}/g" {} +
+          find $TEMP_DIR -type f -exec sed -i "s/{{project_name}}/${{ github.event.inputs.project_name }}/g" {} +
+          find $TEMP_DIR -type f -exec sed -i "s/{{package_name}}/${{ github.event.inputs.package_name }}/g" {} +
+          find $TEMP_DIR -type f -exec sed -i "s/{{project_name_camel_upper_case}}/${{ env.PROJECT_CAMEL_UPPER }}/g" {} +
+          find $TEMP_DIR -type f -exec sed -i "s/{{project_name_camel_lower_case}}/${{ env.PROJECT_CAMEL_LOWER }}/g" {} +
+
+          # 패키지 디렉토리 구조 생성 및 파일 이동
+          OLD_PACKAGE="kr/teamo2/template"
+          NEW_PACKAGE=$(echo ${{ github.event.inputs.package_name }} | sed 's/\./\//g')
+          mkdir -p "$TEMP_DIR/src/main/java/$NEW_PACKAGE"
+
+          # Template 파일 이름 변경 및 이동
+          if [ -d "$TEMP_DIR/src/main/java/$OLD_PACKAGE" ]; then
+            cd "$TEMP_DIR/src/main/java/$OLD_PACKAGE"
+          
+            # Template 파일 이름 변경
+            for file in *.java; do
+              if [[ -f "$file" && "$file" == Template* ]]; then
+                mv "$file" "${file/Template/${{ env.PROJECT_CAMEL_UPPER }}}"
+              fi
+            done
+          
+            # 파일 이동
+            mv * "$TEMP_DIR/src/main/java/$NEW_PACKAGE/"
+            cd "$TEMP_DIR"
+            rm -rf "$TEMP_DIR/src/main/java/kr"
+          fi
+
+          # 새 레포지토리로 푸시
+          cd $TEMP_DIR
+          git config --global init.defaultBranch main
+          git init
+          git config user.name "GitHub Actions Bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Initial commit from template"
+          # PAT를 사용하여 푸시
+          git remote add origin "https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository_owner }}/${{ github.event.inputs.repo_name }}.git"
+          git push -u origin main
+
+      - name: Clean up
+        if: always()
+        run: |
+          rm -rf $TEMP_DIR
