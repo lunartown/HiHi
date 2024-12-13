@@ -67,30 +67,25 @@ jobs:
           find $TEMP_DIR -type f -exec sed -i "s/{{project_name_camel_upper_case}}/${{ env.PROJECT_CAMEL_UPPER }}/g" {} +
           find $TEMP_DIR -type f -exec sed -i "s/{{project_name_camel_lower_case}}/${{ env.PROJECT_CAMEL_LOWER }}/g" {} +
 
-          # 패키지 디렉토리 구조 생성 및 파일 이동
           OLD_PACKAGE="kr/teamo2/template"
           NEW_PACKAGE=$(echo ${{ github.event.inputs.package_name }} | sed 's/\./\//g')
           mkdir -p "$TEMP_DIR/src/main/java/$NEW_PACKAGE"
-
-          cd "$TEMP_DIR"
-
-          # 먼저 디렉토리 이름을 변경 (깊은 디렉토리부터 처리하기 위해 역순으로)
-          find . -type d | sort -r | while read dir; do
-            NEW_DIR_NAME="${dir/template/${{ env.PROJECT_CAMEL_UPPER }}}"
-            if [ "$dir" != "$NEW_DIR_NAME" ]; then
-              mv "$dir" "$NEW_DIR_NAME"
-              echo "Renamed directory $dir to $NEW_DIR_NAME"
-            fi
-          done
           
-          # 그 다음 파일 이름을 변경
-          find . -type f -name "*.java" | while read file; do
-            NEW_NAME="${file/Template/${{ env.PROJECT_CAMEL_UPPER }}}"
-            if [ "$file" != "$NEW_NAME" ]; then
+          if [ -d "$TEMP_DIR/src/main/java/$OLD_PACKAGE" ]; then
+            cd "$TEMP_DIR/src/main/java/$OLD_PACKAGE"
+            
+            # Template로 시작하는 모든 파일의 이름을 변경
+            find . -type f -name "Template*" | while read file; do
+              NEW_NAME="${file/#Template/${{ env.PROJECT_CAMEL_UPPER }}}"
+              mkdir -p "$(dirname "$NEW_NAME")"
               mv "$file" "$NEW_NAME"
-              echo "Renamed file $file to $NEW_NAME"
-            fi
-          done
+            done
+          
+            # 변경된 파일들을 새 패키지 위치로 이동
+            mv * "$TEMP_DIR/src/main/java/$NEW_PACKAGE/"
+            cd "$TEMP_DIR"
+            rm -rf "$TEMP_DIR/src/main/java/kr"
+          fi
 
           # 새 레포지토리로 푸시
           git config --global init.defaultBranch main
